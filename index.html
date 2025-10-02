@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Gestión de Memoria</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <div class="controls">
+            <h2>Configuración</h2>
+
+            <div class="control-group">
+                <label>Técnica de Gestión de Memoria</label>
+                <select id="memory-technique">
+                    <option value="static-fixed">Estática de Tamaño Fijo</option>
+                    <option value="static-variable">Estática de Tamaño Variable</option>
+                    <option value="dynamic">Dinámica</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Algoritmo de Colocación</label>
+                <select id="fit-algorithm">
+                    <option value="first-fit">Primer Ajuste (First-Fit)</option>
+                    <option value="best-fit">Mejor Ajuste (Best-Fit)</option>
+                    <option value="worst-fit">Peor Ajuste (Worst-Fit)</option>
+                </select>
+            </div>
+
+            <div id="dynamic-options" class="control-group" style="display:none;">
+                <label>
+                    <input type="checkbox" id="compaction-enabled"> Compactación Habilitada
+                </label>
+                <button id="compact-btn" class="secondary">Compactar Memoria</button>
+            </div>
+            
+            <button id="reset-btn">Reiniciar Simulación</button>
+
+            <hr style="border-color: var(--secondary-color); margin: 30px 0;">
+
+            <h3>Añadir Proceso</h3>
+            <div class="control-group">
+                <label for="process-name">Nombre del Proceso (opcional)</label>
+                <input type="text" id="process-name" placeholder="Ej: P4">
+            </div>
+            <div class="control-group">
+                <label for="process-size">Tamaño del Proceso (en KiB)</label>
+                <input type="number" id="process-size" min="1" placeholder="Ej: 512">
+            </div>
+            <button id="add-process-btn">Añadir Proceso</button>
+
+            <hr style="border-color: var(--secondary-color); margin: 30px 0;">
+            
+            <h3>Procesos Predefinidos</h3>
+            <button id="add-predefined-btn">Cargar Procesos de Ejemplo</button>
+        </div>
+
+        <div class="memory-container">
+            <h2>Visualización de la Memoria (Total: 16 MiB)</h2>
+            <div id="memory-visualization"></div>
+        </div>
+
+        <div class="process-list-container">
+            <h3>Cola de Espera</h3>
+            <ul id="waiting-queue"></ul>
+        </div>
+    </div>
+    
+    <div id="tooltip"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
