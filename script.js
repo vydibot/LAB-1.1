@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const techniqueSelect = document.getElementById('memory-technique');
     const algorithmSelect = document.getElementById('fit-algorithm');
     const dynamicOptions = document.getElementById('dynamic-options');
-    const compactBtn = document.getElementById('compact-btn');
     const resetBtn = document.getElementById('reset-btn');
     const addProcessBtn = document.getElementById('add-process-btn');
     const addPredefinedBtn = document.getElementById('add-predefined-btn');
@@ -242,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function freeMemory(blockAddress) {
         const technique = techniqueSelect.value;
         let nodeToFree = null;
+        let freed = false;
 
         if (technique === 'dynamic') {
             let current = memory.head;
@@ -254,6 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (nodeToFree && !nodeToFree.data.isFree) {
+                freed = true;
                 nodeToFree.data.isFree = true;
                 nodeToFree.data.process = null;
                 
@@ -274,11 +275,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } else { // Estática
             const blockToFree = memory.find(b => b.address === blockAddress);
             if (blockToFree) {
+                freed = true;
                 blockToFree.isFree = true;
                 blockToFree.process = null;
             }
         }
         
+        if (freed && technique === 'dynamic' && document.getElementById('compaction-enabled').checked) {
+            compactMemory();
+        }
+
         // Intentar alocar procesos en espera
         checkWaitingQueue();
         render();
@@ -299,7 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function compactMemory() {
         if (techniqueSelect.value !== 'dynamic' || !document.getElementById('compaction-enabled').checked) {
-            alert("La compactación solo está disponible para particionamiento dinámico y debe estar habilitada.");
             return;
         }
         
@@ -326,8 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         memory = newLinkedList;
-        render();
-        alert("Compactación completada.");
+        // La renderización se hará en freeMemory
     }
 
     // --- RENDERIZADO Y UI ---
@@ -420,7 +424,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     techniqueSelect.addEventListener('change', initializeMemory);
     resetBtn.addEventListener('click', initializeMemory);
-    compactBtn.addEventListener('click', compactMemory);
     
     addProcessBtn.addEventListener('click', () => {
         const name = document.getElementById('process-name').value;
