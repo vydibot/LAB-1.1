@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
             memory = [];
             memory.push(osBlock);
             const userMemoryStart = OS_MEMORY_BYTES;
-            const userMemorySize = TOTAL_MEMORY_BYTES - OS_MEMORY_BYTES;
+            //const userMemorySize = TOTAL_MEMORY_BYTES - OS_MEMORY_BYTES;
 
             if (technique === 'static-fixed') {
                 // Dividir en 7 particiones de 2 MiB cada una
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const remainingSize = block.size - process.totalSize;
             
             // Si el espacio restante es suficientemente grande, se crea una nueva partición libre
-            if (remainingSize > (16 * 1024)) { // Umbral de fragmentación interna: 16 KiB
+            if (remainingSize >= 0) {
                 block.size = process.totalSize;
                 block.isFree = false;
                 block.process = process;
@@ -307,31 +307,52 @@ document.addEventListener('DOMContentLoaded', () => {
         if (techniqueSelect.value !== 'dynamic' || !document.getElementById('compaction-enabled').checked) {
             return;
         }
-        
+    
+        let writeNode = memory.head.next; // Empezar después del SO
+        let scanNode = memory.head.next;
         let currentAddress = OS_MEMORY_BYTES;
-        let totalFreeSize = 0;
-        
-        const newLinkedList = new DoublyLinkedList();
-        newLinkedList.append(new MemoryBlock(0, OS_MEMORY_BYTES, false, { id: 'SO', name: 'Sistema Operativo', size: OS_MEMORY_BYTES }));
-
-        // Mover todos los procesos al principio
-        memory.forEach(node => {
-            if (!node.data.isFree && node.data.process.id !== 'SO') {
-                node.data.address = currentAddress;
-                newLinkedList.append(node.data);
-                currentAddress += node.data.size;
-            } else if (node.data.isFree) {
-                totalFreeSize += node.data.size;
+    
+        // 1. Mover todos los bloques ocupados al principio
+        while (scanNode) {
+            if (!scanNode.data.isFree) {
+                // Si el bloque de escaneo está ocupado y no es el mismo que el de escritura
+                if (scanNode !== writeNode) {
+                    // Intercambiar los datos entre el nodo de escritura (libre) y el de escaneo (ocupado)
+                    const temp = writeNode.data;
+                    writeNode.data = scanNode.data;
+                    scanNode.data = temp;
+                }
+                // Actualizar la dirección del bloque que ahora está en la posición de escritura
+                writeNode.data.address = currentAddress;
+                currentAddress += writeNode.data.size;
+                
+                // Avanzar el puntero de escritura al siguiente nodo
+                writeNode = writeNode.next;
             }
-        });
-        
-        // Añadir un único bloque libre al final
-        if (totalFreeSize > 0) {
-            newLinkedList.append(new MemoryBlock(currentAddress, totalFreeSize));
+            // Avanzar siempre el puntero de escaneo
+            scanNode = scanNode.next;
         }
-
-        memory = newLinkedList;
-        // La renderización se hará en freeMemory
+    
+        // 2. Fusionar todos los bloques libres restantes en uno solo
+        let firstFree = writeNode;
+        if (!firstFree) return; // No hay espacio libre para fusionar
+    
+        let totalFreeSize = 0;
+        let currentNode = firstFree;
+        while (currentNode) {
+            totalFreeSize += currentNode.data.size;
+            const next = currentNode.next;
+            if (currentNode !== firstFree) {
+                memory.removeNode(currentNode); // Eliminar nodos libres redundantes
+            }
+            currentNode = next;
+        }
+    
+        // Actualizar el primer bloque libre con el tamaño total
+        firstFree.data.isFree = true;
+        firstFree.data.process = null;
+        firstFree.data.size = totalFreeSize;
+        firstFree.data.address = currentAddress;
     }
 
     // --- RENDERIZADO Y UI ---
