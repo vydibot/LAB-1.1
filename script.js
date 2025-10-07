@@ -58,7 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.tail = newNode;
             }
         }
-
+        
+        //Organizacion de nodos 
         removeNode(node) {
             if (node.prev) node.prev.next = node.next;
             else this.head = node.next;
@@ -78,14 +79,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- FUNCIONES DE UTILIDAD ---
-    
+
+    // Formatea bytes a una representación legible
     const formatBytes = (bytes) => {
-        if (bytes === 0) return '0 Bytes';
+        if (bytes === 0) 
+            return '0 Bytes';
         const k = 1024;
         const sizes = ['Bytes', 'KiB', 'MiB', 'GiB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
+    
+    function formatAddress(address) {
+    return '0x' + address.toString(16).toUpperCase().padStart(8, '0');
+}
 
     // --- LÓGICA DE GESTIÓN DE MEMORIA ---
     
@@ -93,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         processIdCounter = 1;
         waitingQueue = [];
         const technique = techniqueSelect.value;
-        
+        //Muestra la compactación solo si es dinámica
         dynamicOptions.style.display = technique === 'dynamic' ? 'block' : 'none';
 
         // Partición fija para el Sistema Operativo
@@ -396,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Tooltip
             blockDiv.addEventListener('mousemove', (e) => {
                 let tooltipContent = `
-                    <b>Dirección Inicio:</b> ${block.address} (${formatBytes(block.address)})<br>
+                    <b>Dirección Inicio:</b> ${formatAddress(block.address)}<br>
                     <b>Tamaño:</b> ${formatBytes(block.size)}
                 `;
                 if (block.process) {
