@@ -7,16 +7,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let memory = null; // Estructura de datos principal para la memoria
     let processIdCounter = 1;
     let waitingQueue = [];
+    let predefinedProcesses = [
+        { name: 'Navegador Web', size: 780, active: false, processId: null },
+        { name: 'Editor de Código', size: 1200, active: false, processId: null },
+        { name: 'Reproductor de Música', size: 450, active: false, processId: null },
+        { name: 'Terminal', size: 256, active: false, processId: null },
+        { name: 'Juego Ligero', size: 2100, active: false, processId: null },
+        { name: 'Base de Datos', size: 3072, active: false, processId: null },
+        { name: 'Máquina Virtual', size: 4096, active: false, processId: null }
+    ];
     
     // Referencias a elementos del DOM
     const memoryVisualization = document.getElementById('memory-visualization');
+    const memoryBlocksContainer = document.getElementById('memory-blocks');
+    const addressLabelsContainer = document.getElementById('address-labels');
     const tooltip = document.getElementById('tooltip');
     const techniqueSelect = document.getElementById('memory-technique');
     const algorithmSelect = document.getElementById('fit-algorithm');
+    const staticOptions = document.getElementById('static-options');
+    const staticFixedConfig = document.getElementById('static-fixed-config');
+    const staticVariableConfig = document.getElementById('static-variable-config');
     const dynamicOptions = document.getElementById('dynamic-options');
     const resetBtn = document.getElementById('reset-btn');
     const addProcessBtn = document.getElementById('add-process-btn');
-    const addPredefinedBtn = document.getElementById('add-predefined-btn');
+    const processListUl = document.getElementById('process-list');
     const waitingQueueUl = document.getElementById('waiting-queue');
 
     // --- CLASES Y ESTRUCTURAS DE DATOS ---
@@ -99,9 +113,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function initializeMemory() {
         processIdCounter = 1;
         waitingQueue = [];
+        predefinedProcesses.forEach(p => {
+            p.active = false;
+            p.processId = null;
+        });
+
         const technique = techniqueSelect.value;
         //Muestra la compactación solo si es dinámica
         dynamicOptions.style.display = technique === 'dynamic' ? 'block' : 'none';
+        staticOptions.style.display = technique.startsWith('static') ? 'block' : 'none';
+        staticFixedConfig.style.display = technique === 'static-fixed' ? 'block' : 'none';
+        staticVariableConfig.style.display = technique === 'static-variable' ? 'block' : 'none';
+
 
         // Partición fija para el Sistema Operativo
         const osBlock = new MemoryBlock(0, OS_MEMORY_BYTES, false, { id: 'SO', name: 'Sistema Operativo', size: OS_MEMORY_BYTES });
@@ -115,22 +138,46 @@ document.addEventListener('DOMContentLoaded', () => {
             memory = [];
             memory.push(osBlock);
             const userMemoryStart = OS_MEMORY_BYTES;
-            //const userMemorySize = TOTAL_MEMORY_BYTES - OS_MEMORY_BYTES;
+            const userMemorySize = TOTAL_MEMORY_BYTES - OS_MEMORY_BYTES;
+            let currentAddress = userMemoryStart;
 
             if (technique === 'static-fixed') {
-                // Dividir en 7 particiones de 2 MiB cada una
-                const partitionSize = 2 * 1024 * 1024;
-                for (let i = 0; i < 7; i++) {
-                    memory.push(new MemoryBlock(userMemoryStart + i * partitionSize, partitionSize));
+                const partitionSizeMiB = parseInt(document.getElementById('fixed-partition-size').value, 10) || 2;
+                const partitionSize = partitionSizeMiB * 1024 * 1024;
+
+                if (userMemorySize % partitionSize !== 0) {
+                    alert(`Error: El tamaño de partición (${partitionSizeMiB} MiB) no divide el espacio de usuario disponible (${formatBytes(userMemorySize)}) de forma exacta. Por favor, elija un tamaño que sea divisor de ${userMemorySize / (1024*1024)} MiB.`);
+                    render(); // Renderiza el estado actual (solo SO)
+                    return;
+                }
+
+                let allocated = 0;
+                while (allocated < userMemorySize) {
+                    memory.push(new MemoryBlock(currentAddress, partitionSize));
+                    currentAddress += partitionSize;
+                    allocated += partitionSize;
                 }
             } else { // 'static-variable'
-                // Tamaños predefinidos: 1, 1, 2, 2, 3, 5 MiB
-                const partitionSizes = [1, 1, 2, 2, 3, 5].map(s => s * 1024 * 1024);
-                let currentAddress = userMemoryStart;
+                const sizesStr = document.getElementById('variable-partition-sizes').value;
+                const partitionSizes = sizesStr.split(',')
+                    .map(s => parseInt(s.trim(), 10))
+                    .filter(s => !isNaN(s) && s > 0)
+                    .map(s => s * 1024 * 1024);
+                
+                let totalPartitionedSize = 0;
                 partitionSizes.forEach(size => {
-                    memory.push(new MemoryBlock(currentAddress, size));
-                    currentAddress += size;
+                    if (totalPartitionedSize + size <= userMemorySize) {
+                        memory.push(new MemoryBlock(currentAddress, size));
+                        currentAddress += size;
+                        totalPartitionedSize += size;
+                    }
                 });
+
+                // Si después de crear las particiones definidas queda espacio, añadirlo como una partición libre.
+                const remainingSize = userMemorySize - totalPartitionedSize;
+                if (remainingSize > 0) {
+                    memory.push(new MemoryBlock(currentAddress, remainingSize));
+                }
             }
         }
         render();
@@ -186,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LÓGICA DE PROCESOS ---
 
-    function addProcess(name, sizeInKiB) {
+    function addProcess(name, sizeInKiB, isPredefined = false, predefinedProcRef = null) {
         if (!sizeInKiB || sizeInKiB <= 0) {
             alert('Por favor, introduce un tamaño de proceso válido.');
             return;
@@ -204,10 +251,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (targetNode) {
             allocateMemory(targetNode, process);
+            if (isPredefined) {
+                predefinedProcRef.processId = process.id;
+            }
             processIdCounter++;
         } else {
-            waitingQueue.push(process);
-            alert(`No hay espacio suficiente para ${process.name} (${formatBytes(processSize)}). Añadido a la cola de espera.`);
+            if (isPredefined) {
+                predefinedProcRef.active = false; // No se pudo alocar, revertir estado
+                alert(`No hay espacio para ${process.name}. Inténtalo más tarde.`);
+            } else {
+                waitingQueue.push(process);
+                alert(`No hay espacio suficiente para ${process.name} (${formatBytes(processSize)}). Añadido a la cola de espera.`);
+            }
         }
         render();
     }
@@ -249,6 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const technique = techniqueSelect.value;
         let nodeToFree = null;
         let freed = false;
+        let freedProcessId = null;
 
         if (technique === 'dynamic') {
             let current = memory.head;
@@ -262,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (nodeToFree && !nodeToFree.data.isFree) {
                 freed = true;
+                freedProcessId = nodeToFree.data.process.id;
                 nodeToFree.data.isFree = true;
                 nodeToFree.data.process = null;
                 
@@ -283,14 +340,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const blockToFree = memory.find(b => b.address === blockAddress);
             if (blockToFree) {
                 freed = true;
+                freedProcessId = blockToFree.process.id;
                 blockToFree.isFree = true;
                 blockToFree.process = null;
             }
         }
         
-        if (freed && technique === 'dynamic' && document.getElementById('compaction-enabled').checked) {
-            compactMemory();
+        if (freed) {
+            // Desactivar en la lista de predefinidos si corresponde
+            const predefined = predefinedProcesses.find(p => p.processId === freedProcessId);
+            if (predefined) {
+                predefined.active = false;
+                predefined.processId = null;
+            }
+
+            if (technique === 'dynamic' && document.getElementById('compaction-enabled').checked) {
+                compactMemory();
+            }
         }
+
 
         // Intentar alocar procesos en espera
         checkWaitingQueue();
@@ -365,7 +433,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- RENDERIZADO Y UI ---
     
     function render() {
-        memoryVisualization.innerHTML = '';
+        memoryBlocksContainer.innerHTML = '';
+        addressLabelsContainer.innerHTML = '';
         
         const iterable = (techniqueSelect.value === 'dynamic') ? memory.head : memory[0];
         
@@ -378,6 +447,22 @@ document.addEventListener('DOMContentLoaded', () => {
             
             blockDiv.style.height = `${heightPercentage}%`;
             blockDiv.style.top = `${topPercentage}%`;
+
+            // Renderizar etiquetas de dirección
+            const startAddrLabel = document.createElement('div');
+            startAddrLabel.className = 'address-label start';
+            startAddrLabel.textContent = formatAddress(block.address);
+            startAddrLabel.style.top = `${topPercentage}%`;
+            addressLabelsContainer.appendChild(startAddrLabel);
+
+            // Etiqueta de fin de bloque
+            if (topPercentage + heightPercentage < 100.1) { // Usar < 100.1 para evitar errores de punto flotante
+                const endAddrLabel = document.createElement('div');
+                endAddrLabel.className = 'address-label end';
+                endAddrLabel.textContent = formatAddress(block.address + block.size - 1);
+                endAddrLabel.style.top = `${topPercentage + heightPercentage}%`;
+                addressLabelsContainer.appendChild(endAddrLabel);
+            }
             
             let content = '';
             if (block.process) { // Bloque ocupado (SO o proceso)
@@ -399,6 +484,18 @@ document.addEventListener('DOMContentLoaded', () => {
             infoDiv.className = 'block-info';
             infoDiv.innerHTML = content;
             blockDiv.appendChild(infoDiv);
+
+            // Visualización de fragmentación interna para particionamiento estático
+            if (techniqueSelect.value.startsWith('static') && block.process && block.process.id !== 'SO') {
+                const internalFrag = block.size - block.process.totalSize;
+                if (internalFrag > 0) {
+                    const fragDiv = document.createElement('div');
+                    fragDiv.className = 'internal-fragmentation';
+                    const fragHeight = (internalFrag / block.size) * 100;
+                    fragDiv.style.height = `${fragHeight}%`;
+                    blockDiv.appendChild(fragDiv);
+                }
+            }
 
             // Tooltip
             blockDiv.addEventListener('mousemove', (e) => {
@@ -430,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tooltip.style.display = 'none';
             });
 
-            memoryVisualization.appendChild(blockDiv);
+            memoryBlocksContainer.appendChild(blockDiv);
         };
 
         if (techniqueSelect.value === 'dynamic') {
@@ -439,13 +536,81 @@ document.addEventListener('DOMContentLoaded', () => {
             memory.forEach(block => renderBlock(block));
         }
         
-        // Renderizar cola de espera
+        renderProcessList();
+        renderWaitingQueue();
+    }
+
+    function renderProcessList() {
+        processListUl.innerHTML = '';
+        predefinedProcesses.forEach(proc => {
+            const li = document.createElement('li');
+            
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'process-info';
+            infoDiv.innerHTML = `
+                <span class="name">${proc.name}</span>
+                <span class="size">${proc.size} KiB</span>
+            `;
+
+            const switchLabel = document.createElement('label');
+            switchLabel.className = 'switch';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = proc.active;
+            checkbox.addEventListener('change', () => {
+                togglePredefinedProcess(proc.name, checkbox.checked);
+            });
+
+            const sliderSpan = document.createElement('span');
+            sliderSpan.className = 'slider';
+
+            switchLabel.appendChild(checkbox);
+            switchLabel.appendChild(sliderSpan);
+            
+            li.appendChild(infoDiv);
+            li.appendChild(switchLabel);
+            processListUl.appendChild(li);
+        });
+    }
+
+    function renderWaitingQueue() {
         waitingQueueUl.innerHTML = '';
         waitingQueue.forEach(proc => {
             const li = document.createElement('li');
             li.textContent = `${proc.name} - ${formatBytes(proc.totalSize)}`;
             waitingQueueUl.appendChild(li);
         });
+    }
+
+    function togglePredefinedProcess(processName, isActive) {
+        const proc = predefinedProcesses.find(p => p.name === processName);
+        if (!proc) return;
+
+        proc.active = isActive;
+
+        if (isActive) {
+            addProcess(proc.name, proc.size, true, proc);
+        } else {
+            if (proc.processId !== null) {
+                let blockToFree = null;
+                const findBlock = (b) => {
+                    if (b.process && b.process.id === proc.processId) {
+                        blockToFree = b;
+                    }
+                };
+
+                if (techniqueSelect.value === 'dynamic') {
+                    memory.forEach(node => findBlock(node.data));
+                } else {
+                    memory.forEach(findBlock);
+                }
+
+                if (blockToFree) {
+                    freeMemory(blockToFree.address);
+                }
+            }
+        }
     }
 
     // --- EVENT LISTENERS ---
@@ -459,17 +624,6 @@ document.addEventListener('DOMContentLoaded', () => {
         addProcess(name, size);
         document.getElementById('process-name').value = '';
         document.getElementById('process-size').value = '';
-    });
-
-    addPredefinedBtn.addEventListener('click', () => {
-        const predefinedProcesses = [
-            { name: 'Navegador Web', size: 780 },
-            { name: 'Editor de Código', size: 1200 },
-            { name: 'Reproductor de Música', size: 450 },
-            { name: 'Terminal', size: 256 },
-            { name: 'Juego Ligero', size: 2100 }
-        ];
-        predefinedProcesses.forEach(p => addProcess(p.name, p.size));
     });
     
     // Inicializar la simulación al cargar la página

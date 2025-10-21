@@ -122,6 +122,38 @@ button.secondary:hover {
     height: 600px; /* Altura fija para la visualización */
     border-radius: var(--border-radius);
     overflow: hidden;
+    display: flex; /* Usar flexbox para alinear direcciones y bloques */
+}
+
+#address-labels {
+    position: relative;
+    width: 100px; /* Ancho para las direcciones */
+    height: 100%;
+    font-size: 0.75em;
+    color: #999;
+    flex-shrink: 0;
+}
+
+.address-label {
+    position: absolute;
+    right: 5px;
+    transform: translateY(-50%);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    line-height: 1;
+}
+
+.address-label.start {
+    transform: translateY(0);
+}
+
+.address-label.end {
+    transform: translateY(-100%);
+}
+
+#memory-blocks {
+    position: relative;
+    height: 100%;
+    flex-grow: 1;
 }
 
 .memory-block {
@@ -144,6 +176,18 @@ button.secondary:hover {
 .memory-block .block-info {
     padding: 5px;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    position: relative; /* Para z-index */
+    z-index: 2;
+}
+
+.internal-fragmentation {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #ff9800; /* Color para fragmentación interna */
+    z-index: 1;
+    transition: height 0.5s;
 }
 
 .block-os { background-color: var(--os-color); }
@@ -176,6 +220,75 @@ button.secondary:hover {
     border-radius: 4px;
     font-size: 0.9em;
 }
+
+/* --- Nuevos estilos para la lista de procesos --- */
+#process-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--secondary-color);
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.process-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.process-info .size {
+    font-size: 0.8em;
+    color: #ccc;
+}
+
+/* Switch toggle styles */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #555;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+/* --- Fin de nuevos estilos --- */
 
 ul {
     list-style: none;
