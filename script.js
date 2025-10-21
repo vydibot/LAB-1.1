@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         render();
     }
-    
+     
     function allocateMemory(node, process) {
         const block = node.data;
         const technique = techniqueSelect.value;
