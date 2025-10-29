@@ -1,0 +1,415 @@
+:root {
+    --bg-color: #1a1a1a;
+    --primary-color: #2a2a2a;
+    --secondary-color: #3c3c3c;
+    --text-color: #e0e0e0;
+    --accent-color: #4CAF50; /* verde */
+    --danger-color: #e53935; /* rojo */
+    --os-color: #555555; /* gris oscuro para so */
+    --free-color: #37474F; /* azul-gris oscuro */
+    --border-radius: 8px;
+    --font-family: 'Inter', sans-serif;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.container {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    max-width: 1600px;
+}
+
+/* --- columnas principales --- */
+.controls-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex: 0 0 320px; /* ancho fijo */
+}
+
+.memory-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex-grow: 1; /* ocupa el espacio restante */
+}
+
+.process-list-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex: 0 0 300px; /* ancho fijo */
+}
+
+/* --- paneles de control y listas --- */
+.controls-panel, .process-list-container {
+    background-color: var(--primary-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.memory-container {
+    background-color: var(--primary-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+h2, h3 {
+    color: var(--accent-color);
+    border-bottom: 2px solid var(--secondary-color);
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+
+/* --- estilos de formulario --- */
+.control-group {
+    margin-bottom: 15px;
+}
+
+.control-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.segment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.segment-grid .control-group {
+    margin-bottom: 0;
+}
+
+input[type="text"], input[type="number"], select, button {
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box; 
+    border-radius: 4px;
+    border: 1px solid var(--secondary-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-family: var(--font-family);
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+button {
+    background-color: var(--accent-color);
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+button.secondary {
+    background-color: #555;
+}
+
+button.secondary:hover {
+    background-color: #666;
+}
+
+/* --- visualización de memoria --- */
+#memory-visualization {
+    border: 2px solid var(--secondary-color);
+    background-color: var(--bg-color);
+    padding: 5px;
+    position: relative;
+    height: 600px; 
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    display: flex;
+    position: relative; /* añadido para que el min-height funcione bien con 'top' */
+}
+
+#address-labels {
+    position: relative;
+    width: 80px; /* ancho para las direcciones */
+    height: 100%;
+    font-size: 0.75em;
+    color: #999;
+    flex-shrink: 0;
+}
+
+.address-label {
+    position: absolute;
+    right: 5px;
+    transform: translateY(-50%);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    line-height: 1;
+}
+
+.address-label.start {
+    transform: translateY(0);
+}
+
+.address-label.end {
+    transform: translateY(-100%);
+}
+
+#memory-blocks {
+    position: relative;
+    height: 100%;
+    flex-grow: 1;
+}
+
+.memory-block {
+    width: 100%;
+    position: absolute;
+    box-sizing: border-box;
+    border-top: 1px solid var(--bg-color);
+    border-bottom: 1px solid var(--bg-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.85em; /* reducido */
+    color: white;
+    cursor: pointer;
+    overflow: hidden;
+    transition: background-color 0.3s, top 0.5s, height 0.5s;
+    min-height: 2px; /* (*** ¡añadido! ***) previene el colapso visual */
+}
+
+.memory-block .block-info {
+    padding: 2px 5px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    position: relative; 
+    z-index: 2;
+    line-height: 1.2;
+    display: none; /* oculto por defecto */
+    font-weight: bold;
+}
+
+/* (¡nuevo!) solo mostrar info si tiene esta clase */
+.memory-block.show-info .block-info {
+    display: block;
+}
+
+.block-os { background-color: var(--os-color); }
+.block-process { 
+    /* el color se aplica por js */
+    transition: background-color 0.3s, filter 0.3s, top 0.5s, height 0.5s;
+}
+.block-free { background-color: var(--free-color); }
+
+.block-free:hover {
+    background-color: #4b6a7c;
+}
+.block-process:hover {
+    filter: brightness(1.2);
+}
+
+#tooltip {
+    position: absolute;
+    display: none;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    pointer-events: none;
+    z-index: 1000;
+    font-size: 0.9em;
+    border: 1px solid var(--secondary-color);
+}
+
+/* --- listas de procesos (¡actualizado!) --- */
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.lista-programas {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--secondary-color);
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.process-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.process-info .name {
+    font-weight: bold;
+}
+
+.process-info .size {
+    font-size: 0.85em;
+    color: #ccc;
+}
+
+.process-instance-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.process-color-swatch {
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* estilos de botones en listas */
+.lista-programas button {
+    padding: 5px 10px;
+    font-size: 0.8em;
+    margin-top: 0;
+    width: auto; /* ancho automático */
+    flex-shrink: 0;
+}
+
+/* botón eliminar (rojo) */
+.lista-programas button:last-child {
+    background-color: var(--danger-color);
+}
+.lista-programas button:last-child:hover {
+    background-color: #c62828;
+}
+
+/* --- tabla de páginas --- */
+#tablas-paginas-container {
+    background-color: var(--primary-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    margin-top: 20px;
+}
+
+#tablas-paginas-content {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* --- estilos de tabla (para modal y tablas de pag) --- */
+.styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 0.9em;
+}
+
+.styled-table th, .styled-table td {
+    border: 1px solid var(--secondary-color);
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.styled-table thead {
+    background-color: var(--secondary-color);
+    font-weight: bold;
+}
+
+.styled-table tbody tr:nth-child(even) {
+    background-color: #333;
+}
+
+/* --- (¡nuevo!) estilos del modal --- */
+.modal-overlay {
+    display: none; 
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.7);
+    
+    /* centrar con flex */
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: var(--primary-color);
+    margin: auto;
+    padding: 20px;
+    border: 1px solid var(--secondary-color);
+    width: 90%;
+    max-width: 600px;
+    border-radius: var(--border-radius);
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.modal-close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+
+.modal-close:hover,
+.modal-close:focus {
+    color: white;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#modal-body h3 {
+    margin-top: 0;
+}
+#modal-body p {
+    margin: 10px 0;
+    line-height: 1.4;
+}
+
+#modal-body button {
+    background-color: var(--danger-color);
+    width: auto;
+    padding: 10px 15px;
+    margin-top: 20px;
+}
+#modal-body button:hover {
+    background-color: #c62828;
+}
+
+.modal-color-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    display: inline-block;
+    margin-right: 8px;
+    border: 1px solid rgba(0,0,0,0.2);
+    vertical-align: middle;
+}
