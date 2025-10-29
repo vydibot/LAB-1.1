@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Gestión de Memoria (Segmentación y Paginación)</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <!-- columna de controles (izquierda) -->
+        <div class="controls-column">
+            <div class="controls-panel">
+                <h2>Configuración</h2>
+
+                <div class="control-group">
+                    <label for="tecnica-memoria">Técnica de Gestión de Memoria</label>
+                    <select id="tecnica-memoria">
+                        <option value="segmentacion">Segmentación</option>
+                        <option value="paginacion">Paginación</option>
+                    </select>
+                </div>
+
+                <!-- opciones de segmentación -->
+                <div id="configuracion-segmentacion" class="control-group-wrapper">
+                    <div class="control-group">
+                        <label for="algoritmo-ajuste">Algoritmo de Colocación</label>
+                        <select id="algoritmo-ajuste">
+                            <option value="first-fit">Primer Ajuste (First-Fit)</option>
+                            <option value="best-fit">Mejor Ajuste (Best-Fit)</option>
+                            <option value="worst-fit">Peor Ajuste (Worst-Fit)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- opciones de paginación -->
+                <div id="configuracion-paginacion" class="control-group-wrapper" style="display:none;">
+                    <div class="control-group">
+                        <label for="tamano-pagina">Tamaño de Marco de Página (en KiB)</label>
+                        <input type="number" id="tamano-pagina" value="64" min="32" step="32">
+                    </div>
+                </div>
+
+                <button id="reiniciar-btn" class="secondary">Reiniciar Simulación</button>
+            </div>
+
+            <!-- formulario para agregar procesos personalizados -->
+            <div class="controls-panel">
+                <h3>Agregar Programa Personalizado</h3>
+                <div class="control-group">
+                    <label for="nombre-personalizado">Nombre del Programa</label>
+                    <input type="text" id="nombre-personalizado" placeholder="Ej: Mi App">
+                </div>
+                
+                <div class="segment-grid">
+                    <div class="control-group">
+                        <label for="tamano-text">.text (KiB)</label>
+                        <input type="number" id="tamano-text" min="0" placeholder="0">
+                    </div>
+                    <div class="control-group">
+                        <label for="tamano-data">.data (KiB)</label>
+                        <input type="number" id="tamano-data" min="0" placeholder="0">
+                    </div>
+                    <div class="control-group">
+                        <label for="tamano-bss">.bss (KiB)</label>
+                        <input type="number" id="tamano-bss" min="0" placeholder="0">
+                    </div>
+                    <div class="control-group">
+                        <label for="tamano-stack">.stack (KiB)</label>
+                        <input type="number" id="tamano-stack" min="0" placeholder="0">
+                    </div>
+                    <div class="control-group">
+                        <label for="tamano-heap">.heap (KiB)</label>
+                        <input type="number" id="tamano-heap" min="0" placeholder="0">
+                    </div>
+                </div>
+                <button id="agregar-proceso-btn">Añadir a Programas Disponibles</button>
+            </div>
+        </div>
+
+        <!-- columna de memoria (centro) -->
+        <div class="memory-column">
+            <div class="memory-container">
+                <h2>Visualización de la Memoria (Total: 16 MiB)</h2>
+                <div id="memory-visualization">
+                    <div id="address-labels"></div>
+                    <div id="memory-blocks"></div>
+                </div>
+            </div>
+
+            <!-- (nuevo) tablas de páginas -->
+            <div id="tablas-paginas-container" style="display: none;">
+                <h2>Tablas de Páginas de Procesos Activos</h2>
+                <div id="tablas-paginas-content">
+                    <!-- las tablas se generarán aquí -->
+                </div>
+            </div>
+        </div>
+
+        <!-- columna de procesos (derecha) -->
+        <div class="process-list-column">
+             <div class="process-list-container">
+                <h3>Programas Disponibles</h3>
+                <ul id="programas-disponibles-list">
+                    <!-- la lista se genera por js -->
+                </ul>
+            </div>
+            <div class="process-list-container">
+                <h3>Procesos en Ejecución</h3>
+                <ul id="procesos-ejecucion-list">
+                    <!-- la lista se genera por js -->
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- (¡nuevo!) modal para detalles del proceso -->
+    <div id="process-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span id="modal-close-btn" class="modal-close">&times;</span>
+            <div id="modal-body">
+                <!-- el contenido se genera por js -->
+            </div>
+        </div>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
